@@ -12,8 +12,8 @@ struct PlayMode : Mode {
 
 	//functions called by main loop:
 	virtual bool handle_event(SDL_Event const &, glm::uvec2 const &window_size) override;
-	virtual void update(float elapsed) override;
-	virtual void draw(glm::uvec2 const &drawable_size) override;
+	virtual void update(float elapsed, bool &player_state) override;
+	virtual void draw(glm::uvec2 const &drawable_size, bool player_state) override;
 
 	//----- game state -----
 
@@ -26,8 +26,10 @@ struct PlayMode : Mode {
 	//some weird background animation:
 	float background_fade = 0.0f;
 
+	int breath_count = 0;
+
 	//player position:
-	glm::vec2 player_at = glm::vec2(0.0f);
+	glm::vec2 player_at = glm::vec2(50, 150);
 
 	//----- drawing handled by PPU466 -----
 

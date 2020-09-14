@@ -101,6 +101,7 @@ int main(int argc, char **argv) {
 	// and will update the window_size and drawable_size variables:
 	glm::uvec2 window_size; //size of window (layout pixels)
 	glm::uvec2 drawable_size; //size of drawable (physical pixels)
+	bool player_state = true;
 	//On non-highDPI displays, window_size will always equal drawable_size.
 	auto on_resize = [&](){
 		int w,h;
@@ -159,13 +160,13 @@ int main(int argc, char **argv) {
 			//lag to avoid spiral of death:
 			elapsed = std::min(0.1f, elapsed);
 
-			Mode::current->update(elapsed);
+			Mode::current->update(elapsed, player_state);
 			if (!Mode::current) break;
 		}
 
 		{ //(3) call the current mode's "draw" function to produce output:
 		
-			Mode::current->draw(drawable_size);
+			Mode::current->draw(drawable_size, player_state);
 		}
 
 		//Wait until the recently-drawn frame is shown before doing it all again:

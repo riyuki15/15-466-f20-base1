@@ -15,10 +15,10 @@ struct Mode : std::enable_shared_from_this< Mode > {
 
 	//update is called at the start of a new frame, after events are handled:
 	// 'elapsed' is time in seconds since the last call to 'update'
-	virtual void update(float elapsed) { }
+	virtual void update(float elapsed, bool &player_state) { }
 
 	//draw is called after update:
-	virtual void draw(glm::uvec2 const &drawable_size) = 0;
+	virtual void draw(glm::uvec2 const &drawable_size, bool player_state) = 0;
 
 	//Mode::current is the Mode to which events are dispatched.
 	// use 'set_current' to change the current Mode (e.g., to switch to a menu)

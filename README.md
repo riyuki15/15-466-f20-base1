@@ -19,7 +19,7 @@ Move to a color block to change the bean into the corresponding color
 Amount of time spent invisible will be printed on the terminal window
 
 Sources: 
-I created the sources with [pixelart](www.pixilart.com).
+I created the png's with [pixelart](www.pixilart.com).
 
 This game was built with [NEST](NEST.md).
 

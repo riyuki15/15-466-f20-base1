@@ -1,6 +1,8 @@
 #include "PlayMode.hpp"
 #include "load_save_png.hpp"
 #include "glm/gtx/string_cast.hpp"
+#include <stdlib.h>     /* srand, rand */
+#include <chrono>
 
 //for the GL_ERRORS() macro:
 #include "gl_errors.hpp"
@@ -12,25 +14,18 @@
 
 PlayMode::PlayMode() {
 
-  // load lil' bean
-  glm::uvec2 player_size;
-  std::vector< glm::u8vec4 > player_data;
-  OriginLocation player_origin = LowerLeftOrigin;
-  load_png("bean.png", &player_size, &player_data, player_origin);
-  glm::uvec2 player_size2;
-  std::vector< glm::u8vec4 > player_data2;
-  load_png("bean2.png", &player_size2, &player_data2, player_origin);
+  //background
+  ppu.palette_table[0] = {glm::u8vec4(0), glm::u8vec4(0), glm::u8vec4(0), glm::u8vec4(0)};
 
-  auto set_palette = [this](int index, glm::uvec2 size, std::vector< glm::u8vec4 > data) {
-    glm::u8vec4 color0;
-    glm::u8vec4 color1;
-    glm::u8vec4 color2;
-    glm::u8vec4 color3;
+  auto set_palette = [this](int palette_index, glm::uvec2 size, std::vector< glm::u8vec4 > data) {
+    glm::u8vec4 color0 = glm::u8vec4(0);
+    glm::u8vec4 color1 = glm::u8vec4(0);
+    glm::u8vec4 color2 = glm::u8vec4(0);
+    glm::u8vec4 color3 = glm::u8vec4(0);
     int color_count = 0;
     for (int j = 0; j < size[0] * size[1]; j++) {
       glm::u8vec4 color = data[j];
       if (color0 == color || color1 == color || color2 == color || color3 == color) continue;
-      std::cout<<glm::to_string(color);
       if (color_count == 0) color0 = color;
       else if (color_count == 1) color1 = color;
       else if (color_count == 2) color2 = color;
@@ -38,13 +33,11 @@ PlayMode::PlayMode() {
       color_count++;
       if (color_count == 4) break;
     }
-    ppu.palette_table[7] = {color0, color1, color2, color3};
+    ppu.palette_table[palette_index] = {color0, color1, color2, color3};
   };
 
-  set_palette(7, player_size, player_data);
-
-  auto set_bits = [this]
-          (int r0, int c0, int index, int palette_index, std::vector< glm::u8vec4 > data) {
+  auto set_bits = [this](int r0, int c0,
+          int tile_index, int palette_index, glm::uvec2 size, std::vector< glm::u8vec4 > data) {
     std::array< uint8_t, 8 > bit0;
     std::array< uint8_t, 8 > bit1;
     glm::u8vec4 color0 = ppu.palette_table[palette_index][0];
@@ -53,8 +46,8 @@ PlayMode::PlayMode() {
     glm::u8vec4 color3 = ppu.palette_table[palette_index][3];
     for (int r = 0; r < 8; r++) {
       for (int c = 0; c < 8; c++) {
-        int player_index = (r0 + r) * 32 + (c0 + c);
-        glm::u8vec4 color = data[player_index];
+        int sprite_index = (r0 + r) * size[0] + (c0 + c);
+        glm::u8vec4 color = data[sprite_index];
         if (color == color0) { //00
           bit0[r] &= ~(0b1 << c);
           bit1[r] &= ~(0b1 << c);
@@ -70,24 +63,66 @@ PlayMode::PlayMode() {
         }
       }
     }
-    ppu.tile_table[index].bit0 = bit0;
-    ppu.tile_table[index].bit1 = bit1;
+    ppu.tile_table[tile_index].bit0 = bit0;
+    ppu.tile_table[tile_index].bit1 = bit1;
   };
 
+  // load lil' bean
+  glm::uvec2 player_size;
+  glm::uvec2 player_size2;
+  std::vector< glm::u8vec4 > player_data;
+  std::vector< glm::u8vec4 > player_data2;
+  OriginLocation origin = LowerLeftOrigin;
+  load_png("bean.png", &player_size, &player_data, origin);
+  load_png("bean2.png", &player_size2, &player_data2, origin);
+
+  set_palette(7, player_size, player_data);
+
+  // separate into 16 tiles because the player sprite is 32 x 32
   int index = 32;
   for (int i = 0; i < player_size[0]/8; i++) {
     for (int j = 0; j < player_size[1]/8; j++) {
-      set_bits(i*8, j*8, index, 7, player_data);
+      set_bits(i*8, j*8, index, 7, player_size, player_data);
       index++;
     }
   }
   index = 48;
   for (int i = 0; i < player_size[0]/8; i++) {
     for (int j = 0; j < player_size[1]/8; j++) {
-      set_bits(i*8, j*8, index, 7, player_data2);
+      set_bits(i*8, j*8, index, 7, player_size, player_data2);
       index++;
     }
   }
+
+  // load color blocks
+  glm::uvec2 color_size;
+  std::vector< glm::u8vec4 > pink_data;
+  std::vector< glm::u8vec4 > yellow_data;
+  std::vector< glm::u8vec4 > blue_data;
+  std::vector< glm::u8vec4 > purple_data;
+  std::vector< glm::u8vec4 > red_data;
+  std::vector< glm::u8vec4 > gray_data;
+  load_png("pink.png", &color_size, &pink_data, origin);
+  load_png("yellow.png", &color_size, &yellow_data, origin);
+  load_png("blue.png", &color_size, &blue_data, origin);
+  load_png("purple.png", &color_size, &purple_data, origin);
+  load_png("red.png", &color_size, &red_data, origin);
+  load_png("gray.png", &color_size, &gray_data, origin);
+
+  set_palette(1, color_size, pink_data);
+  set_palette(2, color_size, yellow_data);
+  set_palette(3, color_size, blue_data);
+  set_palette(4, color_size, purple_data);
+  set_palette(5, color_size, red_data);
+  set_palette(6, color_size, gray_data);
+
+  set_bits(0, 0, 64, 1, color_size, pink_data);
+  set_bits(0, 0, 65, 2, color_size, yellow_data);
+  set_bits(0, 0, 66, 3, color_size, blue_data);
+  set_bits(0, 0, 67, 4, color_size, purple_data);
+  set_bits(0, 0, 68, 5, color_size, red_data);
+  set_bits(0, 0, 69, 6, color_size, gray_data);
+
 
 }
 
@@ -133,7 +168,13 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	return false;
 }
 
-void PlayMode::update(float elapsed, bool &player_state) {
+void PlayMode::update(float elapsed, bool &player_state, uint8_t &bean_palette, bool &bg_change) {
+
+  bg_count++;
+  if (bg_count == 200) {
+    bg_change = true;
+    bg_count = 0;
+  }
 
 	constexpr float PlayerSpeed = 100.0f;
 	if (left.pressed) player_at.x -= PlayerSpeed * elapsed;
@@ -152,11 +193,44 @@ void PlayMode::update(float elapsed, bool &player_state) {
 	  player_state = !player_state;
 	  breath_count = 0;
 	}
+
+	for (int i = 0; i < colors_at.size(); i++) {
+	  int palette_index = 1 + i;
+    glm::vec2 const color_at = colors_at[i];
+    glm::vec2 min = glm::max(color_at - color_radius, player_at - player_radius);
+    glm::vec2 max = glm::min(color_at + color_radius, player_at + player_radius);
+    if (min.x <= max.x && min.y <= max.y) bean_palette = palette_index;;
+	}
+
 }
 
-void PlayMode::draw(glm::uvec2 const &drawable_size, bool player_state) {
+void PlayMode::draw(glm::uvec2 const &drawable_size, bool player_state,
+        uint8_t bean_palette, bool &bg_change, uint8_t &bg_palette) {
 
-	//--- set ppu state based on game state ---
+
+  if (bg_change) {
+    game_started = true;
+    bg_palette = rand() % colors_at.size() + 1;
+    bg_change = false;
+  }
+  ppu.background_color = ppu.palette_table[bg_palette][1];
+
+	if (game_started && bean_palette == bg_palette && !started_counting) {
+    begin = std::chrono::steady_clock::now();
+    started_counting = true;
+    stopped_counting = false;
+	} else if (game_started && bean_palette != bg_palette && !stopped_counting) {
+	  stopped_counting = true;
+	  started_counting = false;
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << "You were invisible for " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]!" << std::endl;
+	}
+
+  for (uint32_t y = 0; y < PPU466::BackgroundHeight; ++y) {
+    for (uint32_t x = 0; x < PPU466::BackgroundWidth; ++x) {
+      ppu.background[x+PPU466::BackgroundWidth*y] = 0;
+    }
+  }
 
 	//player sprite:
 	for (int i = 0; i < 4; i++) {
@@ -166,15 +240,23 @@ void PlayMode::draw(glm::uvec2 const &drawable_size, bool player_state) {
       ppu.sprites[index].y = int32_t(player_at.y) + i*8;
       if (player_state) ppu.sprites[index].index = 32 + index;
       else ppu.sprites[index].index = 48 + index;
-      ppu.sprites[index].attributes = 7;
+      ppu.sprites[index].attributes = bean_palette;
 	  }
 	}
 
-	for (int i = 16; i < 64; i++) {
-    ppu.sprites[i].x = 240;
-    ppu.sprites[i].y = 240;
-	}
+	//color sprites:
+  for (int i = 16; i < 16 + colors_at.size(); i++) {
+    int index = i - 16;
+    ppu.sprites[i].index = 64 + index;
+    ppu.sprites[i].attributes = index + 1;
+    ppu.sprites[i].x = colors_at[index].x;
+    ppu.sprites[i].y = colors_at[index].y;
+  }
 
+	for (int i = 16 + colors_at.size(); i < 64; i++) {
+    ppu.sprites[i].x = 240;
+    ppu.sprites[i].y = 250;
+	}
 
 	//--- actually draw ---
 	ppu.draw(drawable_size);

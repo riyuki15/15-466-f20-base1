@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 
 	//create window:
 	SDL_Window *window = SDL_CreateWindow(
-		"gp20 game1: remember to change your title", //TODO: remember to set a title for your game!
+		"invisi-bean", //TODO: remember to set a title for your game!
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		2*PPU466::ScreenWidth + 8, 2*PPU466::ScreenHeight + 8, //TODO: modify window size if you'd like
 		SDL_WINDOW_OPENGL
@@ -102,6 +102,9 @@ int main(int argc, char **argv) {
 	glm::uvec2 window_size; //size of window (layout pixels)
 	glm::uvec2 drawable_size; //size of drawable (physical pixels)
 	bool player_state = true;
+	bool bg_change = false;
+	uint8_t bean_palette = 7;
+	uint8_t bg_palette = rand() % 6 + 1;
 	//On non-highDPI displays, window_size will always equal drawable_size.
 	auto on_resize = [&](){
 		int w,h;
@@ -160,13 +163,13 @@ int main(int argc, char **argv) {
 			//lag to avoid spiral of death:
 			elapsed = std::min(0.1f, elapsed);
 
-			Mode::current->update(elapsed, player_state);
+			Mode::current->update(elapsed, player_state, bean_palette, bg_change);
 			if (!Mode::current) break;
 		}
 
 		{ //(3) call the current mode's "draw" function to produce output:
 		
-			Mode::current->draw(drawable_size, player_state);
+			Mode::current->draw(drawable_size, player_state, bean_palette, bg_change, bg_palette);
 		}
 
 		//Wait until the recently-drawn frame is shown before doing it all again:

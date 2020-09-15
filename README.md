@@ -1,22 +1,25 @@
-# (TODO: your game's title)
+# Invisi-bean
 
-Author: (TODO: your name)
+Author: Michelle Chang
 
-Design: (TODO: In two sentences or fewer, describe what is new and interesting about your game.)
+Design: Try to be invisible by changing the bean's color by moving to the corresponding color blocks!
 
 Screen Shot:
 
 ![Screen Shot](screenshot.png)
 
 How Your Asset Pipeline Works:
-
-(TODO: describe the steps in your asset pipeline, from source files to tiles/backgrounds/whatever you upload to the PPU466.)
+1. I imported the png files using the load_png function.
+2. I set an index into the palette_table with a palette made of the colors that the png has. I basically loop through pixels on the png and look for new colors to add to the palette.
+3. Using the obtained palette, I set the corresponding bit0 and bit1 vectors within a slot in the tile_table. Considering assets that are larger than 8x8, I would use multiple tiles for a single asset.
 
 How To Play:
+Use arrow keys to move the bean
+Move to a color block to change the bean into the corresponding color
+Amount of time spent invisible will be printed on the terminal window
 
-(TODO: describe the controls and (if needed) goals/strategy.)
-
-Sources: (TODO: list a source URL for any assets you did not create yourself. Make sure you have a license for the asset.)
+Sources: 
+I created the sources with [pixelart](www.pixilart.com).
 
 This game was built with [NEST](NEST.md).
 
